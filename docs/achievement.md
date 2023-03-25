@@ -12,8 +12,7 @@ const client = init(480)
 
 // If the achievement "clicking" exist's the achivement will be granted to the user.
 if (client.achievement.activate('ACHIEVEMENT')) {
-// ...
-}
+// You can add other code like console.log() and more
 }
 ```
 
@@ -29,6 +28,6 @@ const { init } = require('steamworks.js')
 const client = init(480)
 
 // If the achievement "clicking" exist's the achivement will be granted to the user.
-if (client.achievement.activate('ACHIEVEMENT')) {
-// ...
+if client.achievement.isActivated('ACHIEVEMENT')) {
+// You can add other code like console.log() and more
 } ```
