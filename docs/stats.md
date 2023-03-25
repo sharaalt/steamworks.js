@@ -1,4 +1,4 @@
-**Stats Doccumentation**
+***Stats Doccumentation***
 This part of the Doccumentation will be covering how to access stats and edit stats.
 
 <h2>Getting the value</h2>
