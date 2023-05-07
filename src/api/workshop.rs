@@ -2,7 +2,7 @@ use napi_derive::napi;
 
 #[napi]
 pub mod workshop {
-    use napi::bindgen_prelude::{BigInt, Error};
+    use napi::bindgen_prelude::{BigInt, Error, FromNapiValue, ToNapiValue};
     use std::path::Path;
     use steamworks::{FileType, PublishedFileId};
     use tokio::sync::oneshot;
@@ -13,6 +13,25 @@ pub mod workshop {
         pub needs_to_accept_agreement: bool,
     }
 
+    #[napi]
+    pub enum UgcItemVisibility {
+        Public,
+        FriendsOnly,
+        Private,
+        Unlisted,
+    }
+
+    impl From<UgcItemVisibility> for steamworks::PublishedFileVisibility {
+        fn from(visibility: UgcItemVisibility) -> Self {
+            match visibility {
+                UgcItemVisibility::Public => steamworks::PublishedFileVisibility::Public,
+                UgcItemVisibility::FriendsOnly => steamworks::PublishedFileVisibility::FriendsOnly,
+                UgcItemVisibility::Private => steamworks::PublishedFileVisibility::Private,
+                UgcItemVisibility::Unlisted => steamworks::PublishedFileVisibility::Unlisted,
+            }
+        }
+    }
+
     #[napi(object)]
     pub struct UgcUpdate {
         pub title: Option<String>,
@@ -21,6 +40,7 @@ pub mod workshop {
         pub preview_path: Option<String>,
         pub content_path: Option<String>,
         pub tags: Option<Vec<String>>,
+        pub visibility: Option<UgcItemVisibility>,
     }
 
     #[napi(object)]
@@ -37,15 +57,17 @@ pub mod workshop {
     }
 
     #[napi]
-    pub async fn create_item() -> Result<UgcResult, Error> {
+    pub async fn create_item(app_id: Option<u32>) -> Result<UgcResult, Error> {
         let client = crate::client::get_client();
-        let appid = client.utils().app_id();
+        let app_id = app_id
+            .map(steamworks::AppId)
+            .unwrap_or_else(|| client.utils().app_id());
 
         let (tx, rx) = oneshot::channel();
 
         client
             .ugc()
-            .create_item(appid, FileType::Community, |result| {
+            .create_item(app_id, FileType::Community, |result| {
                 tx.send(result).unwrap();
             });
 
@@ -63,16 +85,20 @@ pub mod workshop {
     pub async fn update_item(
         item_id: BigInt,
         update_details: UgcUpdate,
+        app_id: Option<u32>,
     ) -> Result<UgcResult, Error> {
         let client = crate::client::get_client();
-        let appid = client.utils().app_id();
+
+        let app_id = app_id
+            .map(steamworks::AppId)
+            .unwrap_or_else(|| client.utils().app_id());
 
         let (tx, rx) = oneshot::channel();
 
         {
             let mut update = client
                 .ugc()
-                .start_item_update(appid, PublishedFileId(item_id.get_u64().1));
+                .start_item_update(app_id, PublishedFileId(item_id.get_u64().1));
 
             if let Some(title) = update_details.title {
                 update = update.title(title.as_str());
@@ -92,6 +118,10 @@ pub mod workshop {
 
             if let Some(content_path) = update_details.content_path {
                 update = update.content_path(Path::new(&content_path));
+            }
+
+            if let Some(visibility) = update_details.visibility {
+                update = update.visibility(visibility.into());
             }
 
             let change_note = update_details.change_note.as_deref();
@@ -204,13 +234,10 @@ pub mod workshop {
             .ugc()
             .item_download_info(PublishedFileId(item_id.get_u64().1));
 
-        match result {
-            Some(download_info) => Some(DownloadInfo {
-                current: BigInt::from(download_info.0),
-                total: BigInt::from(download_info.1),
-            }),
-            None => None,
-        }
+        result.map(|download_info| DownloadInfo {
+            current: BigInt::from(download_info.0),
+            total: BigInt::from(download_info.1),
+        })
     }
 
     /// Download or update a workshop item.

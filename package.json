@@ -1,10 +1,18 @@
 {
     "name": "steamworks.js",
-    "version": "0.0.29",
+    "version": "0.2.0",
     "main": "index.js",
     "types": "index.d.ts",
     "napi": {
-        "name": "steamworksjs"
+        "name": "steamworksjs",
+        "triples": {
+            "additional": [
+                "x86_64-pc-windows-msvc",
+                "x86_64-unknown-linux-gnu",
+                "x86_64-apple-darwin",
+                "aarch64-apple-darwin"
+            ]
+        }
     },
     "files": [
         "dist/*",
@@ -14,10 +22,10 @@
     ],
     "license": "MIT",
     "devDependencies": {
-        "@napi-rs/cli": "2.15.2",
+        "@napi-rs/cli": "2.15.0",
         "rimraf": "4.4.1",
         "typescript": "4.9.5",
-        "electron": "22.1.0"
+        "electron": "24.2.0"
     },
     "dependencies": {
         "@types/node": "*"
@@ -26,10 +34,10 @@
         "node": ">= 14"
     },
     "scripts": {
-        "build": "node build --release && npm run types",
+        "build": "npm run types && node build --release",
         "build:debug": "node build",
         "prune": "rimraf dist target client.d.ts",
-        "format": "cargo fmt",
+        "format": "cargo fmt && cargo clippy --fix --allow-staged",
         "types": "tsc index.js --allowJs --declaration --emitDeclarationOnly"
     },
     "repository": {

@@ -3,7 +3,7 @@ use napi_derive::napi;
 #[napi]
 pub mod callback {
     use napi::{
-        bindgen_prelude::ToNapiValue,
+        bindgen_prelude::{FromNapiValue, ToNapiValue},
         threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode},
         JsFunction,
     };
@@ -17,7 +17,9 @@ pub mod callback {
     impl Handle {
         #[napi]
         pub fn disconnect(&mut self) {
-            self.handle = None;
+            if let Some(handle) = self.handle.take() {
+                handle.disconnect();
+            }
         }
     }
 
@@ -32,6 +34,7 @@ pub mod callback {
         P2PSessionRequest,
         P2PSessionConnectFail,
         GameLobbyJoinRequested,
+        MicroTxnAuthorizationResponse,
     }
 
     #[napi(ts_generic_types = "C extends keyof import('./callbacks').CallbackReturns")]
@@ -71,6 +74,9 @@ pub mod callback {
             }
             SteamCallback::GameLobbyJoinRequested => {
                 register_callback::<steamworks::GameLobbyJoinRequested>(threadsafe_handler)
+            }
+            SteamCallback::MicroTxnAuthorizationResponse => {
+                register_callback::<steamworks::MicroTxnAuthorizationResponse>(threadsafe_handler)
             }
         };
 

@@ -9,6 +9,7 @@ export interface PlayerSteamId {
 export namespace achievement {
   export function activate(achievement: string): boolean
   export function isActivated(achievement: string): boolean
+  export function clear(achievement: string): boolean
 }
 export namespace apps {
   export function isSubscribedApp(appId: number): boolean
@@ -44,7 +45,8 @@ export namespace callback {
     LobbyChatUpdate = 5,
     P2PSessionRequest = 6,
     P2PSessionConnectFail = 7,
-    GameLobbyJoinRequested = 8
+    GameLobbyJoinRequested = 8,
+    MicroTxnAuthorizationResponse = 9
   }
   export function register<C extends keyof import('./callbacks').CallbackReturns>(steamCallback: C, handler: (value: import('./callbacks').CallbackReturns[C]) => void): Handle
   export class Handle {
@@ -109,7 +111,10 @@ export namespace matchmaking {
     deleteData(key: string): boolean
     /** Get an object containing all the lobby data */
     getFullData(): Record<string, string>
-    /** Merge current lobby data with provided data in a single batch */
+    /**
+     * Merge current lobby data with provided data in a single batch
+     * @returns true if all data was set successfully
+     */
     mergeFullData(data: Record<string, string>): boolean
   }
 }
@@ -155,10 +160,21 @@ export namespace stats {
   export function store(): boolean
   export function resetAll(achievementsToo: boolean): boolean
 }
+export namespace utils {
+  export function getAppId(): number
+  export function getServerRealTime(): number
+  export function isSteamRunningOnSteamDeck(): boolean
+}
 export namespace workshop {
   export interface UgcResult {
     itemId: bigint
     needsToAcceptAgreement: boolean
+  }
+  export const enum UgcItemVisibility {
+    Public = 0,
+    FriendsOnly = 1,
+    Private = 2,
+    Unlisted = 3
   }
   export interface UgcUpdate {
     title?: string
@@ -167,6 +183,7 @@ export namespace workshop {
     previewPath?: string
     contentPath?: string
     tags?: Array<string>
+    visibility?: UgcItemVisibility
   }
   export interface InstallInfo {
     folder: string
@@ -177,8 +194,8 @@ export namespace workshop {
     current: bigint
     total: bigint
   }
-  export function createItem(): Promise<UgcResult>
-  export function updateItem(itemId: bigint, updateDetails: UgcUpdate): Promise<UgcResult>
+  export function createItem(appId?: number | undefined | null): Promise<UgcResult>
+  export function updateItem(itemId: bigint, updateDetails: UgcUpdate, appId?: number | undefined | null): Promise<UgcResult>
   /**
    * Subscribe to a workshop item. It will be downloaded and installed as soon as possible.
    *
