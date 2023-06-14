@@ -11,7 +11,7 @@ const { init } = require('steamworks.js')
 const client = init(480)
 
 // This will access the localplayer's name this can also be contained in a if statment.
-client.localplayer.getName 
+client.localplayer.getName()
 // You can add other code here like a console.log
 ```
 
